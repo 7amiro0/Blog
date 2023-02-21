@@ -5,37 +5,75 @@ import (
 
 	"html/template"
 	"net/http"
-	"gopkg.in/yaml.v3"
 )
 
-func (s *Server) postFild(w http.ResponseWriter, r *http.Request) {
+func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
 	tmpl.Execute(w, nil)
+}
 
-	if r.Method != http.MethodPost {
+func (s *Server) posts(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		blog := storage.Blog{
+			Author: r.FormValue("author"),
+			Title: r.FormValue("title"),
+			Body: r.FormValue("body"),
+		}
+	
+		if err := s.storage.Add(blog); err != nil {
+			s.log.Info("Error to add in db: ", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		blogs, err := s.storage.List()
+		if err != nil {
+			s.log.Info("Error to list in db: ", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		tmpl := template.Must(template.ParseFiles("./templates/tiles.html"))
+		tmpl.Execute(w, blogs)
+	} else if r.Method == http.MethodGet {
+		blogs, err := s.storage.List()
+		if err != nil {
+			s.log.Info("Error to list in db: ", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		tmpl := template.Must(template.ParseFiles("./templates/tiles.html"))
+		tmpl.Execute(w, blogs)
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (s *Server) getPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	blog := storage.Blog{
-		Author: r.FormValue("author"),
-		Title: r.FormValue("title"),
-		Body: r.FormValue("body"),
-	}
+	title := r.FormValue("title")
+	author := r.FormValue("author")
 
-	if err := s.storage.Add(blog); err != nil {
-		s.log.Info("Error to add in db: ", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	mblog, err := yaml.Marshal(blog)
+	blogs, err := s.storage.GetPost(title, author)
 	if err != nil {
-		s.log.Info("Error in marshal blog: ", err)
+		s.log.Info("Error to list in db: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if len(blogs) != 0 {
+		s.storage.IncreaseViews(title, author)
+	}
 
-	s.queue.Add("queue:blogs", mblog)
+	w.Header().Set("Content-Type", "text/html")
+	tmpl := template.Must(template.ParseFiles("./templates/tiles.html"))
+	tmpl.Execute(w, blogs)
 }

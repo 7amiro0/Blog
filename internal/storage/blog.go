@@ -1,7 +1,7 @@
 package storage
 
 type Blog struct {
-	Author string `yaml:"Author"`
-	Title  string `yaml:"Title"`
-	Body   string `yaml:"Body"`
+	Author string `bson:"author"`
+	Title  string `bson:"title"`
+	Body   string `bson:"body"`
 }

@@ -11,17 +11,15 @@ type Server struct {
 	router *http.ServeMux
 	server *http.Server
 	log app.Logger
-	queue app.Queue
-	storage app.StorageBlogs
+	storage app.Storage
 }
 
-func New(addr string, log app.Logger, queue app.Queue, storage app.StorageBlogs) *Server {
+func New(addr string, log app.Logger, storage app.Storage) *Server {
 	router := http.NewServeMux()
 
 	server := &Server{
 		router: router,
 		log:    log,
-		queue:  queue,
 		storage: storage,
 	}
 
@@ -36,7 +34,9 @@ func New(addr string, log app.Logger, queue app.Queue, storage app.StorageBlogs)
 }
 
 func (s *Server) setRouter() {
-	s.router.HandleFunc("/", s.postFild)
+	s.router.HandleFunc("/", s.index)
+	s.router.HandleFunc("/posts", s.posts)
+	s.router.HandleFunc("/post", s.getPost)
 }
 
 func (s *Server) Start() error {

@@ -1,7 +1,5 @@
 FROM golang:alpine
 
-# RUN apk update && apk add git
-
 ENV BIN_FILE /server
 ENV CODE_DIR /go/src/
 
@@ -17,5 +15,6 @@ RUN CGO_ENABLED=0 go build \
         -o ${BIN_FILE} ./cmd/web/*
 
 EXPOSE 8080
+EXPOSE 27017
 
 CMD ${BIN_FILE}

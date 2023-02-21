@@ -2,27 +2,24 @@ package main
 
 import (
 	"blog/internal/logger"
-	"blog/internal/redis"
 	"blog/internal/server"
 	"blog/internal/storage"
 	"context"
-
-	anr "github.com/redis/go-redis/v9"
+	"net"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
 	config := NewConfig()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(),
+		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
 	log := logger.New(config.loggerLevel)
-	
-	queue := redis.New(ctx, &anr.Options{
-		Addr:       config.redis.addres,
-	})
 
-	store, err := storage.NewStorageBlogs(config.mongoURI, ctx)
+	store, err := storage.New(config.mongoURI, ctx, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,12 +29,12 @@ func main() {
 	}
 	defer store.Disconnect()
 
-	serv := server.New(config.server.addres, log, queue, store)
+	serv := server.New(net.JoinHostPort(config.server.host, config.server.port), log, store)
 
 	log.Info("Servre has been created")
 
 	go func() {
-		if err := serv.Start(); err != nil {
+		if err = serv.Start(); err != nil {
 			log.Error("Cant start server: ", err)
 		} 
 	}()
@@ -47,6 +44,5 @@ func main() {
 
 	<-ctx.Done()
 
-	
 	log.Info("Servre has been stoped")
 }

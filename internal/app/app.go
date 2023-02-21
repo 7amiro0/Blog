@@ -2,7 +2,6 @@ package app
 
 import (
 	"blog/internal/storage"
-	"time"
 )
 
 type Logger interface {
@@ -13,17 +12,9 @@ type Logger interface {
 	Info(msg ...any)
 }
 
-type Queue interface {
-	Add(key string, value interface{})
-	Delete(key string, timeOut time.Duration)
-}
-
-type StorageBlogs interface {
+type Storage interface {
 	Add(blog storage.Blog) error
-}
-
-type StorageAnalitics interface {
-	Add() error
-	Update() error
-	Get() error
+	List() ([]storage.Blog, error)
+	GetPost(title, author string) ([]storage.Blog, error)
+	IncreaseViews(title, author string) error
 }

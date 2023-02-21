@@ -9,17 +9,14 @@ services:
       dockerfile: ./docker/Dockerfile
     ports:
       - "8080:8080"
-      - "6379:6379"
       - "27017:27017"
     environment:
       # Logger
       - LEVEL
 
       # Server
-      - SERVERADDR
-
-      # Redis
-      - REDISADDR
+      - HOST
+      - PORT
 
       # MongoDB
       - URI
