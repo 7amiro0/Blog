@@ -7,73 +7,61 @@ import (
 	"net/http"
 )
 
-func (s *Server) index(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
+	blog := storage.Blog{
+		Author: r.FormValue("author"),
+		Title:  r.FormValue("title"),
+		Body:   r.FormValue("body"),
+	}
+
+	if err := s.storage.Add(blog); err != nil {
+		s.log.Info("Error to add in db: ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) listPosts(w http.ResponseWriter, r *http.Request) {
+	blogs, err := s.storage.List()
+	if err != nil {
+		s.log.Info("Error to list in db: ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html")
 	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
-	tmpl.Execute(w, nil)
+	tmpl.Execute(w, blogs)
 }
 
-func (s *Server) posts(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		blog := storage.Blog{
-			Author: r.FormValue("author"),
-			Title: r.FormValue("title"),
-			Body: r.FormValue("body"),
-		}
-	
-		if err := s.storage.Add(blog); err != nil {
-			s.log.Info("Error to add in db: ", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		blogs, err := s.storage.List()
-		if err != nil {
-			s.log.Info("Error to list in db: ", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html")
-		tmpl := template.Must(template.ParseFiles("./templates/tiles.html"))
-		tmpl.Execute(w, blogs)
-	} else if r.Method == http.MethodGet {
-		blogs, err := s.storage.List()
-		if err != nil {
-			s.log.Info("Error to list in db: ", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html")
-		tmpl := template.Must(template.ParseFiles("./templates/tiles.html"))
-		tmpl.Execute(w, blogs)
-	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-}
-
-func (s *Server) getPost(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	title := r.FormValue("title")
-	author := r.FormValue("author")
-
+func (s *Server) getPost(w http.ResponseWriter, r *http.Request, title, author string) {
 	blogs, err := s.storage.GetPost(title, author)
 	if err != nil {
 		s.log.Info("Error to list in db: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if len(blogs) != 0 {
-		s.storage.IncreaseViews(title, author)
-	}
 
 	w.Header().Set("Content-Type", "text/html")
-	tmpl := template.Must(template.ParseFiles("./templates/tiles.html"))
+	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
 	tmpl.Execute(w, blogs)
+}
+
+func (s *Server) index(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		s.createPost(w, r)
+		s.listPosts(w, r)
+	} else if r.Method == http.MethodGet {
+		title := r.FormValue("title")
+		author := r.FormValue("author")
+		
+		if title != "" && author != "" {
+			s.getPost(w, r, title, author)
+		} else {
+			s.listPosts(w, r)
+		}
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 }

@@ -16,5 +16,4 @@ type Storage interface {
 	Add(blog storage.Blog) error
 	List() ([]storage.Blog, error)
 	GetPost(title, author string) ([]storage.Blog, error)
-	IncreaseViews(title, author string) error
 }

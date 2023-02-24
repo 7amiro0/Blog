@@ -34,9 +34,7 @@ func New(addr string, log app.Logger, storage app.Storage) *Server {
 }
 
 func (s *Server) setRouter() {
-	s.router.HandleFunc("/", s.index)
-	s.router.HandleFunc("/posts", s.posts)
-	s.router.HandleFunc("/post", s.getPost)
+	s.router.HandleFunc("/home", s.index)
 }
 
 func (s *Server) Start() error {

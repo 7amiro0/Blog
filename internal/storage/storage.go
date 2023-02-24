@@ -74,14 +74,6 @@ func (s *Storage) List() ([]Blog, error) {
 	return getPosts(values), nil
 }
 
-func (s *Storage) IncreaseViews(title, author string) error {
-	collection := s.client.Database("blogs").Collection("blogs")
-	_, err := collection.UpdateOne(s.ctx, bson.M{"title": title, "author": author}, bson.M{"$inc": bson.M{"views": 1}})
-	return err
-}
-
-
-
 func (s *Storage) GetPost(title, author string) ([]Blog, error) {
 	collection := s.client.Database("blogs").Collection("blogs")
 	values, err := collection.Find(s.ctx, bson.M{"title": title, "author": author})
