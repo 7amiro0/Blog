@@ -47,8 +47,10 @@ func (s *Storage) Add(blog Blog) error {
 	return err
 }
 
-func getPosts(values *mongo.Cursor) []Blog {
-	result := make([]Blog, 0, 1)
+func getPosts(values *mongo.Cursor) Blogs {
+	result := Blogs{
+		Blogs: make([]Blog, 0, 1),
+	}
 
 	for values.Next(context.Background()) {
 		var blog Blog
@@ -57,28 +59,28 @@ func getPosts(values *mongo.Cursor) []Blog {
 			logg.Info("Error to decode blog: ", err)
 		}
 
-		result = append(result, blog)
+		result.Blogs = append(result.Blogs, blog)
 	}
 
 	return result
 }
 
-func (s *Storage) List() ([]Blog, error) {
+func (s *Storage) List() (Blogs, error) {
 	collection := s.client.Database("blogs").Collection("blogs")
 	values, err := collection.Find(s.ctx, bson.M{})
 	if err != nil {
-		return nil, err
+		return Blogs{nil}, err
 	}
 	defer values.Close(s.ctx)
 
 	return getPosts(values), nil
 }
 
-func (s *Storage) GetPost(title, author string) ([]Blog, error) {
+func (s *Storage) GetPost(title, author string) (Blogs, error) {
 	collection := s.client.Database("blogs").Collection("blogs")
 	values, err := collection.Find(s.ctx, bson.M{"title": title, "author": author})
 	if err != nil {
-		return nil, err
+		return Blogs{nil}, err
 	}
 	defer values.Close(s.ctx)
 

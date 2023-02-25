@@ -2,9 +2,15 @@ package server
 
 import (
 	"blog/internal/storage"
+	"time"
 
 	"html/template"
 	"net/http"
+)
+
+const (
+	htmlIndex = "./templates/index.html"
+	lifetimeCache = time.Second * 60
 )
 
 func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
@@ -22,29 +28,57 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listPosts(w http.ResponseWriter, r *http.Request) {
-	blogs, err := s.storage.List()
+	blogs, err := s.cache.Get("blogs")
+	if err == nil {
+		w.Header().Set("Content-Type", "text/html")
+		tmpl := template.Must(template.ParseFiles(htmlIndex))
+		tmpl.Execute(w, blogs.GetPosts())
+
+		return
+	}
+	
+	blogs, err = s.storage.List()
 	if err != nil {
 		s.log.Info("Error to list in db: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	err = s.cache.Set("blogs", blogs, time.Duration(lifetimeCache))
+	if err != nil {
+		s.log.Info("Error cant save cache: ", err)
+	}
+
 	w.Header().Set("Content-Type", "text/html")
-	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
-	tmpl.Execute(w, blogs)
+	tmpl := template.Must(template.ParseFiles(htmlIndex))
+	tmpl.Execute(w, blogs.GetPosts())
 }
 
 func (s *Server) getPost(w http.ResponseWriter, r *http.Request, title, author string) {
-	blogs, err := s.storage.GetPost(title, author)
+	blogs, err := s.cache.Get(title+author)
+	if err == nil {
+		w.Header().Set("Content-Type", "text/html")
+		tmpl := template.Must(template.ParseFiles(htmlIndex))
+		tmpl.Execute(w, blogs.GetPosts())
+
+		return
+	}
+	
+	blogs, err = s.storage.GetPost(title, author)
 	if err != nil {
 		s.log.Info("Error to list in db: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	err = s.cache.Set(title+author, blogs, time.Duration(lifetimeCache))
+	if err != nil {
+		s.log.Info("Error cant save cache: ", err)
+	}
+
 	w.Header().Set("Content-Type", "text/html")
-	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
-	tmpl.Execute(w, blogs)
+	tmpl := template.Must(template.ParseFiles(htmlIndex))
+	tmpl.Execute(w, blogs.GetPosts())
 }
 
 func (s *Server) index(w http.ResponseWriter, r *http.Request) {

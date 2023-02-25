@@ -1,6 +1,7 @@
 package main
 
 import (
+	"blog/internal/cache"
 	"blog/internal/logger"
 	"blog/internal/server"
 	"blog/internal/storage"
@@ -24,12 +25,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	cache := cache.New(config.redis.addr, config.redis.password, 0)
+
 	if err = store.Connect(); err != nil {
 		log.Fatal(err)
 	}
 	defer store.Disconnect()
 
-	serv := server.New(net.JoinHostPort(config.server.host, config.server.port), log, store)
+	serv := server.New(
+		net.JoinHostPort(config.server.host, config.server.port),
+		log, store,	cache,
+	)
 
 	log.Info("Servre has been created")
 

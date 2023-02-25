@@ -10,17 +10,19 @@ import (
 type Server struct {
 	router *http.ServeMux
 	server *http.Server
+	cache app.Cache
 	log app.Logger
 	storage app.Storage
 }
 
-func New(addr string, log app.Logger, storage app.Storage) *Server {
+func New(addr string, log app.Logger, storage app.Storage, cache app.Cache) *Server {
 	router := http.NewServeMux()
 
 	server := &Server{
 		router: router,
 		log:    log,
 		storage: storage,
+		cache: cache,
 	}
 
 	server.setRouter()

@@ -2,7 +2,9 @@ version: v3
 
 services:
   server:
-    container_name: "server"
+    depends_on:
+      - redis
+    container_name: "web"
     restart: on-failure
     build:
       context: ..
@@ -20,3 +22,15 @@ services:
 
       # MongoDB
       - URI
+
+      #Redis
+      - REDIS_ADDR
+      - REDIS_PASSWORD
+  
+  redis:
+    container_name: "redis"
+    image: redis:alpine
+    restart: on-failure
+    ports:
+      - "6379:6379"
+      

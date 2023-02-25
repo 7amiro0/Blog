@@ -6,11 +6,22 @@ type Config struct {
 	loggerLevel string
 	mongoURI    string
 	server      serverConfig
+	redis redisConfig
 }
 
 type serverConfig struct {
 	host string
 	port string
+}
+
+type redisConfig struct {
+	addr string
+	password string
+}
+
+func (r *redisConfig) Set() {
+	r.addr = os.Getenv("REDIS_ADDR")
+	r.password = os.Getenv("REDIS_PASSWORD")
 }
 
 func (s *serverConfig) Set() {
@@ -21,6 +32,7 @@ func (s *serverConfig) Set() {
 func (c *Config) Set() {
 	c.loggerLevel = os.Getenv("LEVEL")
 	c.mongoURI = os.Getenv("URI")
+	c.redis.Set()
 	c.server.Set()
 }
 
