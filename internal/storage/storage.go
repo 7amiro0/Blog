@@ -41,7 +41,7 @@ func (s *Storage) Disconnect() error {
 func (s *Storage) Add(blog Blog) error {
 	collection := s.client.Database("blogs").Collection("blogs")
 	_, err := collection.InsertOne(s.ctx, 
-		bson.M{"title": blog.Title, "author": blog.Author, "body": blog.Body, "views": 0},
+		bson.M{"title": blog.Title, "author": blog.Author, "body": blog.Body},
 	)
 	
 	return err

@@ -1,0 +1,10 @@
+version: v3
+
+services:
+  redis:
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
